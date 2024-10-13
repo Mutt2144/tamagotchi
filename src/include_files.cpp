@@ -1,0 +1,1 @@
+#include "games/hangman/hangman.cpp"

@@ -14,9 +14,22 @@
 #include <random>
 #include <ctime>
 
+//void sent_message(const char* msg);
+
+#include "games/hangman/hangman.hpp"
+
+#include "include_files.cpp"
+
+HANGMAN_GAME Hangman_Game;
+
 const char* hello_message[2]  = { "Hello!", "Hi!" };
 const char* hungry_message[2] = { "I'm hungry.", "I'm very hungry, feed me!" };
+const char* angry_message[1]  = { "I'm angry!" };
+const char* feed_message[3]   = { "Thank you!", "Thank you very much!", "I'm full!" };
 const char* sad_message[1]    = { "We can play something?" };
+
+const char* invalid_message[2] = { "What?", "I don't understand you." };
+
 
 struct TAMAGOTCHI_DATA {
     std::string name;
@@ -130,15 +143,15 @@ void load_data() {
             if (line == "no_data") {
                 std::cout << "Type the name of your tamagotchi: ";
                 std::string tama_name;
-                //std::getline(std::cin, tama_name);
+                std::getline(std::cin, tama_name);
 
 
                 std::cout << "[DEBUG]" << tama_name << "\n\n";
 
                 tamagotchi_data.name       = tama_name;
                 tamagotchi_data.health     = 100;
-                tamagotchi_data.hunger     = 10;
-                tamagotchi_data.sleepiness = 100;
+                tamagotchi_data.hunger     = 5;
+                tamagotchi_data.sleepiness = 5;
                 tamagotchi_data.happiness  = 100;
             } else {
                 if (line_count == 0) tamagotchi_data.name = line;
@@ -155,40 +168,91 @@ void load_data() {
     }
 }
 
+void choose_game() {
+    std::system("clear");
+    std::string line;
+
+    sent_message("Let's play!");
+
+    while (true) {
+        sent_message("What you want play?\n");
+        std::cout << "[1] Hangman   [2] NULL\n> ";
+        std::getline(std::cin, line);
+
+        if (line == "1") {
+            Hangman_Game.play();
+            break;
+        }
+        else {
+            std::system("clear");
+            sent_message("Humm, this isn't a option, choose again");
+        }
+
+        break;
+    }
+
+    tamagotchi_data.happiness  += rand() % 20;
+    tamagotchi_data.hunger     += rand() % 10;
+    tamagotchi_data.sleepiness += rand() % 8;
+}
+
 void loop() {
-    int msg_id;
-    msg_id = rand() % 2;
-    draw_sprite(SPRITE_HAPPY);
-    sent_message(hello_message[msg_id]);
-    
-    show_actions();
     std::string input;
-    std::cout << "> ";
+    std::string last_action = "no_action";
 
-    while (std::getline(std::cin, input)) {
+    int msg_id;
+    
+    while (true) {
         std::system("clear");
+        draw_sprite(get_face_id());
+    
+        if (last_action == "no_action")      sent_message(hello_message[rand() % sizeof(hello_message) / sizeof(hello_message[0])]);                
+        if (tamagotchi_data.hunger > 75)     sent_message(hungry_message[1]);
+        else if (tamagotchi_data.hunger > 50)     sent_message(hungry_message[0]);
 
-        draw_sprite(SPRITE_HAPPY);
+        if (last_action == "feed")           sent_message(feed_message[msg_id]);
+        if (last_action == "invalid_action") sent_message(invalid_message[msg_id]);
+        //std::cout << "ID: " << msg_id << "\n";
+        //std::cout << "length: " << sizeof(feed_message) / sizeof(feed_message[0]) << "\n";
+
         show_actions();
+        
         std::cout << "> ";
-
-        if (input == "q" || input == "Q") {
-            save_data();
-            return;
+        std::getline(std::cin, input);
+        
+        switch (std::tolower(input[0])) {
+            case 'q':
+                save_data();
+                return;
+            case 'f':
+                feed_tamagotchi();
+                last_action = "feed";
+                
+                if (tamagotchi_data.hunger > 5) msg_id = rand() % 2;
+                else msg_id = 2;
+                break;
+            case 'p':
+                // TODO: Implement play functionality
+                last_action = "play";
+                choose_game();
+                break;
+            case 's':
+                show_stats();
+                last_action = "stats";
+                std::cout << "\nPress Enter to continue...";
+                std::cin.ignore();
+                break;
+            default:
+                msg_id = rand() % sizeof(invalid_message) / sizeof(invalid_message[0]);
+                last_action = "invalid_action";
         }
-
-        if (input == "f" || input == "F") {
-            feed_tamagotchi();
-        }
-
-        if (input == "p" || input == "P") {
-        }
-
-        if (input == "s" || input == "S") {
-            show_stats();
-        }
+        
+        // Update tamagotchi state here (e.g., increase hunger, decrease happiness over time)
+        // TODO: Implement state updates
     }
 }
+
+
 
 int main() {
     srand(time(0));
